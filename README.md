@@ -412,24 +412,19 @@ All detections were validated in **Splunk Enterprise Security** at `192.168.20.6
 **Triggers on:** T1059.001 tests 3, 10, 15, 17,1  
 **Sysmon Event:** ID 1 (Process Create)
 
-```spl
-index=sysmon EventCode=1
-  (CommandLine="*-EncodedCommand*" OR CommandLine="*-enc *"
-   OR CommandLine="*IEX*" OR CommandLine="*Invoke-Expression*"
-   OR CommandLine="*DownloadString*" OR CommandLine="*FromBase64String*")
-| table _time, ComputerName, User, CommandLine, ParentCommandLine
-| sort -_time
-```
+
 <img width="1687" height="122" alt="exec of update executable" src="https://github.com/user-attachments/assets/b870499b-6824-4e5c-bacd-34c4a913767d" />
 
+This is the initial Meterpreter reverse shell beacon. The payload update.exe, delivered via the simulated phishing link, immediately connected back to the attacker's C2 listener on port 443.
 
 <img width="1680" height="465" alt="exec of T1059 001 3" src="https://github.com/user-attachments/assets/002d493e-7f94-4af8-9732-7b36de0ba85f" />
 
+This event corresponds to ART test T1059.001-3. PowerShell downloads SharpHound directly from GitHub into memory using IEX + DownloadString without ever writing the script to disk. Tools are loaded and executed entirely in memory, leaving minimal forensic artifacts on the file system. 
 
 <img width="1692" height="87" alt="Exec of T1059 001 10" src="https://github.com/user-attachments/assets/a04d1436-fc32-471d-822a-efd4d130664f" />
-
-
 <img width="1690" height="172" alt="Exec of T1059 001 15" src="https://github.com/user-attachments/assets/ea5d0962-824b-4cb5-8f59-7eccfd5b5caf" />
+
+This is ART test T1059.001-15, which exercises multiple variations of the -EncodedCommand flag (-E, -En, -Enc, -Enco, etc.) that attackers use to evade simple string-matching rules that only look for the full -EncodedCommand keyword. The Base64 blob is visible in the raw command line.
 
 
 <img width="1656" height="86" alt="Exec of T1059 001 17" src="https://github.com/user-attachments/assets/5851835a-1f09-4b64-8650-cb26b0c608f2" />
@@ -437,7 +432,7 @@ index=sysmon EventCode=1
 
 <img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" /><img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/b18389be-67a8-4867-b81b-fd12ea24e2d9" />
 
-
+This is ART test T1059.001-1: Mimikatz is pulled directly from the PowerSploit GitHub repository into memory and executed without writing any binary to disk. This event bridges the Execution phase and the Credential Access phase
 
 
 
