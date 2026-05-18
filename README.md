@@ -499,15 +499,10 @@ These registry modifications allow malicious payloads to survive system reboots 
 
 ### Detection 5 — Windows Event Log Cleared
 
-**Triggers on:** Manual T1070.001 equivalent  
+**Triggers on:** Manual / T1070.001   
 **Windows Event:** ID 1102 (Security), ID 104 (System)
 
-```spl
-index=wineventlog (EventCode=1102 OR EventCode=104)
-| eval log_type=if(EventCode=1102, "Security Log Cleared", "System Log Cleared")
-| table _time, ComputerName, SubjectUserName, log_type
-| sort -_time
-```
+
 <img width="1561" height="501" alt="Exec of T1070 001 Clear Logs" src="https://github.com/user-attachments/assets/3f24fcf6-52e2-48b4-8d35-093202731084" />
 
 
