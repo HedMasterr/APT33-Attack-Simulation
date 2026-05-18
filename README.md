@@ -431,7 +431,8 @@ This is ART test T1059.001-15, which exercises multiple variations of the -Encod
 
 
 
-<img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" /><img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/b18389be-67a8-4867-b81b-fd12ea24e2d9" />
+<img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" />
+
 
 
 This is ART test T1059.001-1: Mimikatz is pulled directly from the PowerSploit GitHub repository into memory and executed without writing any binary to disk. This event bridges the Execution phase and the Credential Access phase
