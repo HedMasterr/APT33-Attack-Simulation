@@ -409,58 +409,45 @@ All detections were validated in **Splunk Enterprise Security** at `192.168.20.6
 
 ### Detection 1 — Suspicious PowerShell Encoded Command
 
-**Triggers on:** T1059.001 tests 3, 10, 15, 17,1  
-**Sysmon Event:** ID 1 (Process Create)
+**Triggers on:** T1059.001 tests 3, 10, 15, 1  
 
 
 <img width="1687" height="122" alt="exec of update executable" src="https://github.com/user-attachments/assets/b870499b-6824-4e5c-bacd-34c4a913767d" />
 
+
 This is the initial Meterpreter reverse shell beacon. The payload update.exe, delivered via the simulated phishing link, immediately connected back to the attacker's C2 listener on port 443.
+
 
 <img width="1680" height="465" alt="exec of T1059 001 3" src="https://github.com/user-attachments/assets/002d493e-7f94-4af8-9732-7b36de0ba85f" />
 
+
 This event corresponds to ART test T1059.001-3. PowerShell downloads SharpHound directly from GitHub into memory using IEX + DownloadString without ever writing the script to disk. Tools are loaded and executed entirely in memory, leaving minimal forensic artifacts on the file system. 
 
-<img width="1692" height="87" alt="Exec of T1059 001 10" src="https://github.com/user-attachments/assets/a04d1436-fc32-471d-822a-efd4d130664f" />
+
 <img width="1690" height="172" alt="Exec of T1059 001 15" src="https://github.com/user-attachments/assets/ea5d0962-824b-4cb5-8f59-7eccfd5b5caf" />
+
 
 This is ART test T1059.001-15, which exercises multiple variations of the -EncodedCommand flag (-E, -En, -Enc, -Enco, etc.) that attackers use to evade simple string-matching rules that only look for the full -EncodedCommand keyword. The Base64 blob is visible in the raw command line.
 
 
-<img width="1656" height="86" alt="Exec of T1059 001 17" src="https://github.com/user-attachments/assets/5851835a-1f09-4b64-8650-cb26b0c608f2" />
-
 
 <img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" /><img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/b18389be-67a8-4867-b81b-fd12ea24e2d9" />
+
 
 This is ART test T1059.001-1: Mimikatz is pulled directly from the PowerSploit GitHub repository into memory and executed without writing any binary to disk. This event bridges the Execution phase and the Credential Access phase
 
 
 
 
-**Expected result during simulation:** Multiple hits from `powershell.exe` spawned by the ART test runner, with Base64-encoded arguments visible in the command line.
-
----
-
 ### Detection 2 — LSASS Memory Access (Credential Dump)
 
 **Triggers on:** T1003.001 — Mimikatz / comsvcs.dll dump  
-**Sysmon Event:** ID 10 (Process Accessed)
 
-```spl
-index=sysmon EventCode=10 TargetImage="*lsass.exe"
-  (GrantedAccess="0x1010" OR GrantedAccess="0x1410"
-   OR GrantedAccess="0x1438" OR GrantedAccess="0x143a"
-   OR GrantedAccess="0x1fffff")
-| table _time, ComputerName, SourceImage, TargetImage, GrantedAccess, CallTrace
-| sort -_time
-```
-<img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/3aaea463-944d-461b-9e28-c855f82747e6" />
 
-<img width="1547" height="465" alt="Exec of T1003 001 2 eventID 1" src="https://github.com/user-attachments/assets/c1874c24-67ea-4112-9efd-fdf90197bb63" />
 
 <img width="1687" height="527" alt="Exec of T1003 001 2 Correlation" src="https://github.com/user-attachments/assets/ceda273f-6b8d-4574-9017-ac1474548993" />
 
-**Expected result:** `SourceImage` will show `mimikatz.exe` or `rundll32.exe` (for comsvcs.dll method) accessing `lsass.exe` with a suspicious `GrantedAccess` mask. This is one of the highest-confidence credential dumping indicators available.
+
 
 ---
 
