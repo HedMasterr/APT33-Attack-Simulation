@@ -13,7 +13,7 @@
 
 1. [Executive Summary](#1-executive-summary)
 2. [Lab Architecture](#2-lab-architecture)
-3. [Threat Intelligence — Who is APT33?](#3-threat-intelligence--who-is-apt33)
+3. [Threat Intelligence : Who is APT33?](#3-threat-intelligence--who-is-apt33)
 4. [Environment Setup](#4-environment-setup)
 5. [Phase 1 — Initial Access & Payload Delivery](#5-phase-1--initial-access--payload-delivery)
 6. [Phase 2 — Execution (T1059.001)](#6-phase-2--execution-t1059001)
@@ -21,11 +21,10 @@
 8. [Phase 4 — Defense Evasion](#8-phase-4--defense-evasion)
 9. [Phase 5 — Discovery](#9-phase-5--discovery)
 10. [Phase 6 — Credential Access (T1003.001)](#10-phase-6--credential-access-t1003001)
-11. [Phase 7 — Lateral Movement (T1021.002)](#11-phase-7--lateral-movement-t1021002)
-12. [Phase 8 — Collection & Exfiltration (T1560.001 / T1041)](#12-phase-8--collection--exfiltration-t1560001--t1041)
+12. [Phase 7 — Collection & Exfiltration (T1560.001 / T1041)](#12-phase-8--collection--exfiltration-t1560001--t1041)
 13. [Detection — Splunk ES & Sysmon Analysis](#13-detection--splunk-es--sysmon-analysis)
 14. [MITRE ATT&CK Coverage Map](#14-mitre-attck-coverage-map)
-15. [Key Takeaways](#15-key-takeaways)
+
 
 ---
 
@@ -74,7 +73,7 @@ The lab is built on VMware/VirtualBox and segmented into three network zones con
 
 ---
 
-## 3. Threat Intelligence — Who is APT33?
+## 3. Threat Intelligence : Who is APT33?
 
 APT33 is an Iranian cyber espionage group that has been active since at least 2013. Mandiant (formerly FireEye) first publicly attributed the group in 2017. The group primarily targets organizations in the **aerospace, aviation, energy, and petrochemical** sectors.
 
