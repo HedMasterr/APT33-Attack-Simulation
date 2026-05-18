@@ -448,6 +448,22 @@ index=sysmon EventCode=1
 | table _time, ComputerName, User, CommandLine, ParentCommandLine
 | sort -_time
 ```
+<img width="1687" height="122" alt="exec of update executable" src="https://github.com/user-attachments/assets/b870499b-6824-4e5c-bacd-34c4a913767d" />
+
+<img width="1680" height="465" alt="exec of T1059 001 3" src="https://github.com/user-attachments/assets/002d493e-7f94-4af8-9732-7b36de0ba85f" />
+
+<img width="1692" height="87" alt="Exec of T1059 001 10" src="https://github.com/user-attachments/assets/a04d1436-fc32-471d-822a-efd4d130664f" />
+
+<img width="1690" height="172" alt="Exec of T1059 001 15" src="https://github.com/user-attachments/assets/ea5d0962-824b-4cb5-8f59-7eccfd5b5caf" />
+
+<img width="1656" height="86" alt="Exec of T1059 001 17" src="https://github.com/user-attachments/assets/5851835a-1f09-4b64-8650-cb26b0c608f2" />
+
+<img width="1687" height="97" alt="Exec of T1059 001 1" src="https://github.com/user-attachments/assets/ec560a7d-c4e9-4b66-98f9-a68e516bbad0" /><img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/b18389be-67a8-4867-b81b-fd12ea24e2d9" />
+
+
+
+
+
 
 **Expected result during simulation:** Multiple hits from `powershell.exe` spawned by the ART test runner, with Base64-encoded arguments visible in the command line.
 
@@ -466,6 +482,11 @@ index=sysmon EventCode=10 TargetImage="*lsass.exe"
 | table _time, ComputerName, SourceImage, TargetImage, GrantedAccess, CallTrace
 | sort -_time
 ```
+<img width="1527" height="97" alt="Exec of T1003 001 2 EventID 11 " src="https://github.com/user-attachments/assets/3aaea463-944d-461b-9e28-c855f82747e6" />
+
+<img width="1547" height="465" alt="Exec of T1003 001 2 eventID 1" src="https://github.com/user-attachments/assets/c1874c24-67ea-4112-9efd-fdf90197bb63" />
+
+<img width="1687" height="527" alt="Exec of T1003 001 2 Correlation" src="https://github.com/user-attachments/assets/ceda273f-6b8d-4574-9017-ac1474548993" />
 
 **Expected result:** `SourceImage` will show `mimikatz.exe` or `rundll32.exe` (for comsvcs.dll method) accessing `lsass.exe` with a suspicious `GrantedAccess` mask. This is one of the highest-confidence credential dumping indicators available.
 
@@ -485,6 +506,7 @@ index=wineventlog (EventCode=4698 OR EventCode=4702)
 | table _time, ComputerName, SubjectUserName, Task_Name, task_content
 | sort -_time
 ```
+<img width="1546" height="306" alt="Exec of T1053 005 4 SchTask" src="https://github.com/user-attachments/assets/74efad5e-4aa8-4d45-a18f-2f61155d5f3b" />
 
 **Expected result:** Task named `WindowsDefenderUpdate` (or ART-generated name) with a PowerShell encoded command in the task definition.
 
@@ -503,25 +525,17 @@ index=sysmon EventCode=13
 | table _time, ComputerName, User, Image, TargetObject, Details
 | sort -_time
 ```
+<img width="1697" height="272" alt="Exec of T1547 001 1 Registry Run Key Modif" src="https://github.com/user-attachments/assets/aa6e4e06-2d9a-4ff5-b3d7-b669be7f9773" />
+
+<img width="1680" height="80" alt="Exec of T1547 001 3" src="https://github.com/user-attachments/assets/cc43050e-8f18-444b-9d61-02627db027ea" />
 
 **Expected result:** `TargetObject` pointing to `\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` with a suspicious executable path in `Details`.
 
 ---
 
-### Detection 5 — Windows Defender Disabled
 
-**Triggers on:** Manual T1562.001 equivalent  
-**Windows Event:** ID 5001
 
-```spl
-index=wineventlog EventCode=5001
-| table _time, ComputerName, param1, param2
-| sort -_time
-```
-
----
-
-### Detection 6 — Windows Event Log Cleared
+### Detection 5 — Windows Event Log Cleared
 
 **Triggers on:** Manual T1070.001 equivalent  
 **Windows Event:** ID 1102 (Security), ID 104 (System)
@@ -532,83 +546,9 @@ index=wineventlog (EventCode=1102 OR EventCode=104)
 | table _time, ComputerName, SubjectUserName, log_type
 | sort -_time
 ```
+<img width="1561" height="501" alt="Exec of T1070 001 Clear Logs" src="https://github.com/user-attachments/assets/3f24fcf6-52e2-48b4-8d35-093202731084" />
 
 > **Key insight:** Even though the attacker cleared the logs, Event ID 1102 itself is logged to the Security log *before* the clear completes, and the Splunk forwarder ships it to the SIEM *in real time*. The attacker cannot erase this event from Splunk — only from the local machine.
-
----
-
-### Detection 7 — Lateral Movement via SMB to Domain Controller
-
-**Triggers on:** T1021.002 — Pass-the-Hash + net use  
-**Windows Events:** ID 4624 (Logon Type 3) + ID 4648
-
-```spl
-index=wineventlog EventCode=4624 Logon_Type=3
-  dest="192.168.10.15" src_ip="192.168.10.50"
-| table _time, src_ip, dest, Account_Name, Logon_Type, WorkstationName
-| sort -_time
-```
-
-**Pass-the-Hash specific indicator:**
-
-```spl
-index=wineventlog EventCode=4624 Logon_Type=3
-  dest="192.168.10.15"
-| eval is_pth=if(KeyLength="0" AND LogonProcess="NtLmSsp", "Possible PtH", "Normal")
-| where is_pth="Possible PtH"
-| table _time, src_ip, dest, Account_Name, is_pth
-```
-
-> **Pass-the-Hash signature:** `KeyLength=0` combined with `LogonProcess=NtLmSsp` and `Logon_Type=3` is a well-documented indicator of Pass-the-Hash in Windows Security logs.
-
----
-
-### Detection 8 — C2 Beacon / Suspicious Outbound HTTPS
-
-**Triggers on:** T1071.001 — Periodic HTTPS beacon to attacker  
-**Sysmon Event:** ID 3 (Network Connection)
-
-```spl
-index=sysmon EventCode=3
-  dest_ip="192.168.16.130" dest_port=443
-| bin _time span=5m
-| stats count by _time, src_ip, dest_ip, dest_port, Image
-| where count >= 3
-| eval beacon_indicator="Periodic outbound HTTPS — possible C2"
-| table _time, src_ip, dest_ip, Image, count, beacon_indicator
-| sort -count desc
-```
-
-**Expected result:** `powershell.exe` or the payload process making repeated connections to `192.168.16.130:443` at regular intervals — the classic C2 beacon pattern.
-
----
-
-### Splunk ES Correlation Search — Full APT33 Kill Chain
-
-Create this as an Enterprise Security Correlation Search to detect multiple APT33 behaviors in a single alert and generate a Notable Event in Incident Review.
-
-```spl
-| tstats summariesonly=false count
-  FROM datamodel=Endpoint.Processes
-  WHERE (
-    Processes.process="*mimikatz*"
-    OR Processes.process="*sekurlsa*"
-    OR Processes.process="*-EncodedCommand*"
-    OR Processes.process="*comsvcs*MiniDump*"
-    OR Processes.process="*wevtutil*cl*"
-  )
-  BY Processes.dest, Processes.user, Processes.process_name, Processes.process, _time span=1h
-| rename Processes.* AS *
-| eval risk_score=case(
-    match(process, "(?i)mimikatz"),            95,
-    match(process, "(?i)MiniDump"),            90,
-    match(process, "(?i)wevtutil.*cl"),        80,
-    match(process, "(?i)-EncodedCommand"),      70,
-    true(),                                    50)
-| where risk_score >= 70
-| table _time, dest, user, process_name, process, risk_score
-| sort -risk_score
-```
 
 ---
 
@@ -623,42 +563,19 @@ Create this as an Enterprise Security Correlation Search to detect multiple APT3
 | 5 | T1547.001 | Registry Run Keys | Persistence | ART #1, #3 | ✅ |
 | 6 | T1562.001 | Disable Security Tools | Defense Evasion | Manual | ✅ |
 | 7 | T1070.001 | Clear Windows Event Logs | Defense Evasion | Manual (wevtutil) | ✅ |
-| 8 | T1082 | System Information Discovery | Discovery | ART #1 | ⚠️ |
-| 9 | T1016 | Network Config Discovery | Discovery | ART #1 | ⚠️ |
-| 10 | T1018 | Remote System Discovery | Discovery | ART #1 | ⚠️ |
+| 8 | T1082 | System Information Discovery | Discovery | ART #1 | ✅ |
+| 9 | T1016 | Network Config Discovery | Discovery | ART #1 | ✅ |
+| 10 | T1018 | Remote System Discovery | Discovery | ART #1 | ✅ |
 | 11 | T1003.001 | LSASS Memory Dump | Credential Access | ART #1, #2 + Mimikatz | ✅ |
-| 12 | T1021.002 | SMB Admin Shares | Lateral Movement | ART #1 + Manual PtH | ✅ |
+| 12 | T1021.002 | SMB Admin Shares | Lateral Movement | ART #1 + Manual PtH | ⚠️ |
 | 13 | T1560.001 | Archive Collected Data | Collection | ART #1 | ⚠️ |
-| 14 | T1041 | Exfil Over C2 | Exfiltration | ART #1 + Meterpreter | ✅ |
-| 15 | T1071.001 | Web Protocols (HTTPS C2) | C2 | ART #1 + Manual beacon | ✅ |
+| 14 | T1041 | Exfil Over C2 | Exfiltration | ART #1 + Meterpreter | ⚠️ |
+| 15 | T1071.001 | Web Protocols (HTTPS C2) | C2 | ART #1 + Manual beacon | ⚠️ |
 
 > ✅ Detected in Splunk ES | ⚠️ Telemetry generated, detection rule needed
 
 ---
 
-## 15. Key Takeaways
-
-### Offensive Perspective
-
-1. **WDigest being disabled (`Password: (null)`) does not stop credential theft.** NTLM hashes are always extractable from LSASS on domain-joined machines and are fully usable for Pass-the-Hash without cracking.
-
-2. **Living-off-the-land is effective.** The most impactful techniques in this simulation — `comsvcs.dll` for LSASS dumping, `ntdsutil` for AD database extraction, `wevtutil` for log clearing — use built-in Windows tools that are rarely blocked.
-
-3. **Clearing event logs does not erase SIEM evidence.** Splunk Universal Forwarder ships events in near-real-time. By the time `wevtutil cl Security` runs, the events are already in the SIEM.
-
-### Defensive Perspective
-
-1. **Sysmon Event ID 10 is your most reliable credential dumping indicator.** Configure Splunk alerts on any process accessing `lsass.exe` with `GrantedAccess >= 0x1010`. False positives are minimal.
-
-2. **Pass-the-Hash leaves a fingerprint.** `EventCode=4624`, `Logon_Type=3`, `KeyLength=0`, `LogonProcess=NtLmSsp` — this combination in Windows Security logs is highly indicative of PtH and rarely seen in legitimate traffic.
-
-3. **PowerShell `-EncodedCommand` should be treated as suspicious.** Legitimate enterprise software almost never uses encoded commands. Log and alert on all PowerShell with encoded arguments.
-
-4. **Segment your network.** The Victim Machine at `192.168.10.50` should not have SMB access to the Domain Controller at `192.168.10.15` under normal operations. Network segmentation and firewall rules on PfSense would have blocked lateral movement entirely.
-
-5. **Credential Guard** is the most effective defense against LSASS dumping. Enabling it on the Victim Machine and Domain Controller would have prevented Mimikatz from extracting any usable hashes.
-
----
 
 ## References
 
@@ -672,4 +589,4 @@ Create this as an Enterprise Security Correlation Search to detect multiple APT3
 
 ---
 
-*Conducted in an isolated home lab environment. All techniques were performed against machines I own and control. This report is intended for educational purposes and SOC analyst training.*
+
