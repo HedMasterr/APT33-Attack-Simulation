@@ -450,27 +450,20 @@ This is ART test T1059.001-1: Mimikatz is pulled directly from the PowerSploit G
 
 
 
+The timeline highlights multiple correlated events collected through Sysmon logs and analyzed in Splunk. The detection begins with reconnaissance activity (whoami.exe), followed by the execution of powershell.exe, which launches rundll32.exe with comsvcs.dll to invoke the MiniDump function against the LSASS process. The command line parameters clearly show the creation of a dump file named lsass-comsvcs.dmp within the user’s temporary directory.
+
+
+
 ---
 
 ### Detection 3 — Scheduled Task Created via PowerShell
 
 **Triggers on:** T1053.005-4, T1053.005-7  
-**Windows Event:** ID 4698 (Scheduled Task Created)
 
-```spl
-index=wineventlog (EventCode=4698 OR EventCode=4702)
-| eval task_content=Task_Content
-| search task_content="*powershell*" OR task_content="*cmd*"
-         OR task_content="*wscript*" OR task_content="*mshta*"
-         OR task_content="*EncodedCommand*"
-| table _time, ComputerName, SubjectUserName, Task_Name, task_content
-| sort -_time
-```
+
 <img width="1546" height="306" alt="Exec of T1053 005 4 SchTask" src="https://github.com/user-attachments/assets/74efad5e-4aa8-4d45-a18f-2f61155d5f3b" />
 
-**Expected result:** Task named `WindowsDefenderUpdate` (or ART-generated name) with a PowerShell encoded command in the task definition.
 
----
 
 ### Detection 4 — Registry Run Key Modification
 
