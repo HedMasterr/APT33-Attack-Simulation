@@ -458,17 +458,21 @@ The timeline highlights multiple correlated events collected through Sysmon logs
 
 ### Detection 3 — Scheduled Task Created via PowerShell
 
-**Triggers on:** T1053.005-4, T1053.005-7  
+**Triggers on:** T1053.005-4 
 
 
 <img width="1546" height="306" alt="Exec of T1053 005 4 SchTask" src="https://github.com/user-attachments/assets/74efad5e-4aa8-4d45-a18f-2f61155d5f3b" />
 
 
+This sysmon event shows the execution of powershell.exe using PowerShell cmdlets including New-ScheduledTaskAction, New-ScheduledTaskTrigger, and Register-ScheduledTask. The command creates a scheduled task configured to execute calc.exe at user logon with elevated privileges (RunLevel Highest) under the built-in Administrators group.
+
+This behavior demonstrates how attackers can establish persistence on a compromised system by registering scheduled tasks that automatically execute malicious payloads after reboot or user authentication.
+
 
 ### Detection 4 — Registry Run Key Modification
 
 **Triggers on:** T1547.001-1, T1547.001-3  
-**Sysmon Event:** ID 13 (Registry Value Set)
+
 
 ```spl
 index=sysmon EventCode=13
@@ -480,11 +484,16 @@ index=sysmon EventCode=13
 ```
 <img width="1697" height="272" alt="Exec of T1547 001 1 Registry Run Key Modif" src="https://github.com/user-attachments/assets/aa6e4e06-2d9a-4ff5-b3d7-b669be7f9773" />
 
+This query monitors changes made to registry paths associated with automatic program execution during system startup or user logon, including Run, RunOnce, and RunOnceEx registry keys. 
+The captured events show suspicious modifications performed through both powershell.exe and reg.exe, including the addition of commands designed to execute PowerShell in hidden mode and download remote content from an external source.
+
+
 <img width="1680" height="80" alt="Exec of T1547 001 3" src="https://github.com/user-attachments/assets/cc43050e-8f18-444b-9d61-02627db027ea" />
 
-**Expected result:** `TargetObject` pointing to `\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` with a suspicious executable path in `Details`.
 
----
+This event demonstrates the registration of the Atomic Red Team executable within a Run key, simulating persistence behavior.
+These registry modifications allow malicious payloads to survive system reboots and maintain long-term access to the compromised host.
+
 
 
 
@@ -501,9 +510,7 @@ index=wineventlog (EventCode=1102 OR EventCode=104)
 ```
 <img width="1561" height="501" alt="Exec of T1070 001 Clear Logs" src="https://github.com/user-attachments/assets/3f24fcf6-52e2-48b4-8d35-093202731084" />
 
-> **Key insight:** Even though the attacker cleared the logs, Event ID 1102 itself is logged to the Security log *before* the clear completes, and the Splunk forwarder ships it to the SIEM *in real time*. The attacker cannot erase this event from Splunk — only from the local machine.
 
----
 
 ## 14. MITRE ATT&CK Coverage Map
 
