@@ -1,5 +1,5 @@
 
-# APT33 (Elfin) Attack Simulation — Home Lab Walkthrough
+# APT33 (Elfin) Attack Simulation
 
 > **Type:** Red Team / Blue Team Simulation  
 > **Framework:** MITRE ATT&CK® | Atomic Red Team  
